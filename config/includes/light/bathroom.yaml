@@ -1,0 +1,22 @@
+- platform: template
+  lights:
+    bathroom:
+      friendly_name: "Bathroom"
+      turn_on:
+        service: shell_command.rako
+        data_template:
+          room: 41
+          channel: 0
+          level: 255
+      turn_off:
+        service: shell_command.rako
+        data_template:
+           room: 41
+           channel: 0
+           level: 0
+      set_level:
+        service: shell_command.rako
+        data_template:
+          room: 41
+          channel: 0
+          level: "{{brightness}}"

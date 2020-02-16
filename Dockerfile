@@ -1,8 +1,8 @@
 # Raspberry Pi/ARM
-FROM easypi/alpine-arm
+#FROM easypi/alpine-arm
 
-# x64_86
-#FROM alpine
+# x86_64
+FROM alpine
 
 MAINTAINER willj12
 
@@ -12,9 +12,11 @@ RUN \
 	autoconf \
 	curl \
 	eudev-dev \
+	ffmpeg-dev \
 	freetype-dev \
 	g++ \
 	gcc \
+	glib-dev \
 	jpeg-dev \
 	lcms2-dev \
 	libffi \
@@ -36,6 +38,8 @@ RUN \
 	zlib-dev
 
 RUN ln -s /usr/include/locale.h /usr/include/xlocale.h
+
+RUN pip3 install --upgrade pip
 
 RUN \
  pip3 install -r https://raw.githubusercontent.com/home-assistant/home-assistant/master/requirements_all.txt

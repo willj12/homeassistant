@@ -11,8 +11,10 @@ homeassistant:
   # Pick yours from here: http://en.wikipedia.org/wiki/List_of_tz_database_time_zones
   time_zone: Europe/London
   # Customization file
-  customize: !include customize.yaml
+  #customize: !include customize.yaml
 
+  auth_providers:
+    - type: homeassistant
 
 # Enables the frontend
 frontend:
@@ -51,23 +53,143 @@ logbook:
 map:
 
 # Track the sun
-sun:
+#sun:
 
 # Weather prediction
-sensor:
-  - platform: yr
+#sensor:
+#  - platform: yr
 
 # Text to speech
-tts:
-  - platform: google
+#tts:
+#  - platform: google_translate
+#    service_name: google_say
 
 # Cloud
-cloud:
+#cloud:
 
-group: !include groups.yaml
-automation: !include automations.yaml
-script: !include scripts.yaml
+#group: !include groups.yaml
+#automation: !include automations.yaml
+#script: !include scripts.yaml
 
-# Rako
-shell_command: !include_dir_named includes/shell_command/
-light: !include_dir_merge_list includes/light/
+ios:
+
+mqtt:
+  broker: 192.168.20.13
+  discovery: true
+  discovery_prefix: homeassistant
+
+# TV
+wake_on_lan:
+media_player: !include_dir_list includes/media_player/
+
+# Smart plugs (TpLink HS110)
+# https://github.com/softScheck/tplink-smartplug
+# https://www.home-assistant.io/components/tplink/
+tplink:
+  discovery: false
+  switch:
+    - host: 192.168.21.10
+    - host: 192.168.21.11
+    - host: 192.168.21.12
+    - host: 192.168.21.13
+
+homekit:
+  filter:
+    include_domains:
+      - light
+      - media_player
+      - switch
+  entity_config:
+    media_player.amp:
+      feature_list:
+        - feature: on_off
+    media_player.tv:
+      feature_list:
+        - feature: on_off
+    switch.master_bedroom_lamp:
+      type: outlet
+
+emulated_hue:
+  listen_port: 8300
+  advertise_ip: 192.168.20.13
+  advertise_port: 8300
+  expose_by_default: true
+
+sensor:
+  - platform: template
+    sensors:
+      washing_machine_amps:
+        friendly_name_template: "{{ states.switch.washing_machine.name}} Current"
+        value_template: '{{ states.switch.washing_machine.attributes["current_a"] | float }}'
+        unit_of_measurement: 'A'
+      washing_machine_watts:
+        friendly_name_template: "{{ states.switch.washing_machine.name}} Current Consumption"
+        value_template: '{{ states.switch.washing_machine.attributes["current_power_w"] | float }}'
+        unit_of_measurement: 'W'
+      washing_machine_total_kwh:
+        friendly_name_template: "{{ states.switch.washing_machine.name}} Total Consumption"
+        value_template: '{{ states.switch.washing_machine.attributes["total_energy_kwh"] | float }}'
+        unit_of_measurement: 'kWh'
+      washing_machine_volts:
+        friendly_name_template: "{{ states.switch.washing_machine.name}} Voltage"
+        value_template: '{{ states.switch.washing_machine.attributes["voltage"] | float }}'
+        unit_of_measurement: 'V'
+      washing_machine_today_kwh:
+        friendly_name_template: "{{ states.switch.washing_machine.name}} Today's Consumption"
+        value_template: '{{ states.switch.washing_machine.attributes["today_energy_kwh"] | float }}'
+        unit_of_measurement: 'kWh'
+
+automation:
+  - alias: "Turn on amp when TV turns on"
+    trigger:
+      platform: state
+      entity_id: media_player.TV
+      from: 'off'
+      to: 'playing'
+    action:
+      - service: media_player.turn_on
+        entity_id: media_player.amp
+      - service: media_player.select_source
+        entity_id: media_player.amp
+        data:
+          source: AV5
+      - service: media_player.volume_set
+        entity_id: media_player.amp
+        data:
+          volume_level: 0.7
+
+  - alias: "Turn off amp when TV turns off"
+    trigger:
+      platform: state
+      entity_id: media_player.TV
+      from: 'playing'
+      to: 'off'
+    condition:
+      condition: template
+      value_template: '{{ states.media_player.amp.attributes.source == "AV5"  }}'
+    action:
+      service: media_player.turn_off
+      entity_id: media_player.amp
+
+  - alias: "Turn off amp after 5mins idle"
+    trigger:
+      platform: state
+      entity_id: media_player.amp
+      to: 'idle'
+      for: '00:05:00'
+    action:
+      service: media_player.turn_off
+      entity_id: media_player.amp
+
+  - alias: "Notify when washing machine finishes"
+    trigger:
+      platform: numeric_state
+      entity_id: sensor.washing_machine_watts
+      below: 2
+      for: "00:02:00"
+    action:
+      service: notify.ios_williams_iphone
+      data:
+        title: "Washing Machine"
+        message: "Wash has finished!"
+

@@ -1,0 +1,13 @@
+platform: webostv
+host: 192.168.20.233
+turn_on_action:
+  service: wake_on_lan.send_magic_packet
+  data:
+    mac: 38:8c:50:f4:2b:70
+name: TV
+customize:
+  sources:
+    - Live TV
+    - Amazon Prime Video
+    - Plex
+    - BBC iPlayer

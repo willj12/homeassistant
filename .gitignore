@@ -1,0 +1,10 @@
+.idea
+.HA_VERSION
+.homekit.state
+.ios.conf
+.storage
+.uuid
+emulated_hue_ids.json
+home-assistant.log
+home-assistant_v2.db
+webostv.conf
